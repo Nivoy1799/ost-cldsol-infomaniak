@@ -31,49 +31,59 @@ open http://localhost:8080
 | `MEMCACHED_HOST` | `localhost:11211` | Memcached Adresse |
 | `CACHE_TTL_SECONDS` | `30` | Cache-TTL in Sekunden |
 
-## Docker
+## Deployment auf Infomaniak Jelastic (Native Go PaaS)
 
-```bash
-docker build -t swiss-transport-board .
-docker run -p 8080:8080 -e MEMCACHED_HOST=host.docker.internal:11211 swiss-transport-board
-```
-
-## Deployment auf Infomaniak Jelastic
+Die App wird nativ auf dem Jelastic Go Application Server deployed -- kein Docker nötig. Jelastic baut den Go-Code direkt aus dem Source.
 
 ### 1. Environment erstellen
 
 1. Im Jelastic Dashboard → **New Environment**
-2. **Docker Container** hinzufügen (Custom Image)
-3. **Memcached** Node hinzufügen (aus den NoSQL-Optionen)
-4. Environment benennen (z.B. `transport-board`)
+2. Tab **Go** wählen → Go-Version auswählen (z.B. 1.23.x)
+3. Cloudlets konfigurieren (z.B. 2 Reserved, 4 Dynamic)
+4. **Memcached** Node hinzufügen (Bereich "Cache")
+5. Environment benennen (z.B. `transport-board`)
+6. **Create** klicken
 
-### 2. Docker Image deployen
+### 2. Git-Repository verbinden und deployen
 
-**Option A: Via Dockerfile (empfohlen)**
-1. Repository-URL im Docker-Container konfigurieren
-2. Oder: Image lokal bauen und in eine Registry pushen
+1. Im Dashboard unten → **Deployment Manager** öffnen
+2. Tab **Git/SVN** → **Add Repo**
+3. Repository-URL eingeben: `https://github.com/Nivoy1799/ost-cldsol-infomaniak.git`
+4. Branch: `main`
+5. Path: Falls das Go-Projekt in einem Unterordner liegt, dies beachten
+6. Auf das Projekt hovern → **Deploy to...** → Go-Environment wählen → Context: **ROOT**
+7. Jelastic klont das Repo, führt `go get` + `go build` aus und startet die App
 
-**Option B: Via Git-Deployment**
-1. Git-Repository im Jelastic Dashboard verbinden
-2. Build-Kommando: `docker build -t app .`
+**Optional:** "Check and auto-deploy updates" aktivieren für automatisches Redeployment bei Git-Pushes.
 
 ### 3. Environment Variables setzen
 
-Im Jelastic Dashboard unter dem Docker-Container:
+Im Jelastic Dashboard auf den Go-Node klicken → **Variables**:
 
 ```
-PORT=8080
-MEMCACHED_HOST=<memcached-node-ip>:11211
+MEMCACHED_HOST=<memcached-internal-hostname>:11211
 CACHE_TTL_SECONDS=30
 ```
 
-Die interne IP des Memcached-Nodes findet sich im Jelastic Dashboard.
+Den internen Hostnamen des Memcached-Nodes findet man im Dashboard (Format: `nodeXXXXX` oder `memcached-envname.jcloud.ik-server.com`).
 
-### 4. Health Check
+**Hinweis:** `PORT` muss nicht gesetzt werden -- die App lauscht standardmässig auf 8080, was dem Jelastic-Standard entspricht.
+
+### 4. Verifizieren
 
 ```
-GET /health → 200 OK {"status":"ok"}
+GET https://<environment-url>/health → 200 OK {"status":"ok"}
+GET https://<environment-url>/ → Suchseite
+GET https://<environment-url>/departures?station=Bern → Live-Abfahrten
 ```
+
+### Jelastic-spezifische Variablen
+
+| Variable | Beschreibung |
+|---|---|
+| `GOPATH` | Automatisch auf `/home/jelastic/webapp` gesetzt |
+| `GO_RUN` | Name des Binary (auto-erkannt aus Projektname) |
+| `GO_BUILD_OPTIONS` | Build-Flags (default: `-a`) |
 
 ## API-Endpunkte
 
