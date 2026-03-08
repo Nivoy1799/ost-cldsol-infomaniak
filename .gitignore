@@ -9,3 +9,7 @@ swiss-transport-board/app
 
 # Environment
 .env
+
+# Moon
+.moon/cache/
+.moon/hooks/

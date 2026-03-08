@@ -1,0 +1,9 @@
+projects:
+  docs: 'docs'
+  swiss-transport-board: 'swiss-transport-board'
+
+vcs:
+  defaultBranch: 'main'
+  hooks:
+    pre-commit:
+      - 'moon run docs:spellcheck docs:check swiss-transport-board:fmt-check swiss-transport-board:vet'

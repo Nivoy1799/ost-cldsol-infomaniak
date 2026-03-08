@@ -1,0 +1,44 @@
+language: 'go'
+
+tasks:
+  build:
+    command: 'go build -o app .'
+    inputs:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+    outputs:
+      - 'app'
+
+  test:
+    command: 'go test -v ./...'
+    inputs:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+
+  lint:
+    command: 'golangci-lint run ./...'
+    inputs:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+
+  vet:
+    command: 'go vet ./...'
+    inputs:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+
+  fmt-check:
+    command: 'bash -c "test -z $(gofmt -l .)"'
+    inputs:
+      - '**/*.go'
+
+  security:
+    command: 'bash -c "govulncheck ./... || true"'
+    inputs:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'

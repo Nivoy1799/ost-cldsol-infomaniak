@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.1'
+
+      - name: Install proto & moon
+        run: |
+          curl -fsSL https://moonrepo.dev/install/proto.sh | bash
+          echo "$HOME/.proto/bin" >> $GITHUB_PATH
+          proto install moon
+
+      - name: Install typst
+        run: |
+          curl -fsSL https://github.com/typst/typst/releases/latest/download/typst-x86_64-unknown-linux-musl.tar.xz | tar xJf - --strip-components=1 -C /usr/local/bin
+
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          install-only: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run moon ci
+        run: moon ci
+
+      - name: Upload compiled PDF
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: bericht
+          path: docs/bericht.pdf
+
+      - name: Gitleaks secret scanning
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
