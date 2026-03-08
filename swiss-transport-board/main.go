@@ -128,7 +128,9 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	s.tmpl.Execute(w, PageData{})
+	if err := s.tmpl.Execute(w, PageData{}); err != nil {
+		slog.Error("template execute failed", "error", err)
+	}
 }
 
 func (s *Server) handleDepartures(w http.ResponseWriter, r *http.Request) {
@@ -143,13 +145,15 @@ func (s *Server) handleDepartures(w http.ResponseWriter, r *http.Request) {
 	result.ResponseMs = time.Since(start).Milliseconds()
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	s.tmpl.Execute(w, PageData{Query: station, Result: &result})
+	if err := s.tmpl.Execute(w, PageData{Query: station, Result: &result}); err != nil {
+		slog.Error("template execute failed", "error", err)
+	}
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func (s *Server) getDepartures(station string) CacheResult {
@@ -173,7 +177,7 @@ func (s *Server) getDepartures(station string) CacheResult {
 		slog.Error("API request failed", "error", err)
 		return CacheResult{Error: "Verbindung zur Transport-API fehlgeschlagen.", StationName: station}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		slog.Error("API returned error", "status", resp.StatusCode)
