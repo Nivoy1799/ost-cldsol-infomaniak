@@ -1,0 +1,11 @@
+# PDF output (compiled from typst)
+*.pdf
+
+# Go binary
+swiss-transport-board/app
+
+# macOS
+.DS_Store
+
+# Environment
+.env
