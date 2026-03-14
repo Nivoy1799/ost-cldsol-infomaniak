@@ -7,6 +7,14 @@ tasks:
     outputs:
       - 'bericht.pdf'
 
+  build:
+    script: 'typst compile main.typ "Infomaniak - Risch und Merlo.pdf" && cp "Infomaniak - Risch und Merlo.pdf" ..'
+    inputs:
+      - 'main.typ'
+      - 'artifakte/**/*'
+    outputs:
+      - 'Infomaniak - Risch und Merlo.pdf'
+
   check:
     command: 'typst compile main.typ /dev/null -f pdf'
     inputs:
