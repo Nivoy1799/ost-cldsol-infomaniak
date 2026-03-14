@@ -1,6 +1,3 @@
-# PDF output (compiled from typst)
-*.pdf
-
 # Go binary
 /app
 
@@ -13,3 +10,6 @@
 # Moon
 .moon/cache/
 .moon/hooks/
+
+# Generated PDFs
+*.pdf
