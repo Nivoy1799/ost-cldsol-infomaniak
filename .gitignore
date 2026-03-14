@@ -2,7 +2,7 @@
 *.pdf
 
 # Go binary
-swiss-transport-board/app
+/app
 
 # macOS
 .DS_Store

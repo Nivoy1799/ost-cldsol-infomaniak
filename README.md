@@ -50,9 +50,8 @@ Die App wird nativ auf dem Jelastic Go Application Server deployed -- kein Docke
 2. Tab **Git/SVN** → **Add Repo**
 3. Repository-URL eingeben: `https://github.com/Nivoy1799/ost-cldsol-infomaniak.git`
 4. Branch: `main`
-5. Path: Falls das Go-Projekt in einem Unterordner liegt, dies beachten
-6. Auf das Projekt hovern → **Deploy to...** → Go-Environment wählen → Context: **ROOT**
-7. Jelastic klont das Repo, führt `go get` + `go build` aus und startet die App
+5. Auf das Projekt hovern → **Deploy to...** → Go-Environment wählen → Context: **ROOT**
+6. Jelastic klont das Repo, führt `go get` + `go build` aus und startet die App
 
 **Optional:** "Check and auto-deploy updates" aktivieren für automatisches Redeployment bei Git-Pushes.
 

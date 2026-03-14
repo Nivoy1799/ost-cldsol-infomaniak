@@ -1,6 +1,6 @@
 projects:
   docs: 'docs'
-  swiss-transport-board: 'swiss-transport-board'
+  swiss-transport-board: '.'
 
 vcs:
   defaultBranch: 'main'

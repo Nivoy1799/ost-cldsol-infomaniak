@@ -35,7 +35,6 @@ tasks:
     command: 'bash -c "test -z $(gofmt -l .)"'
     inputs:
       - '**/*.go'
-
   security:
     command: 'bash -c "govulncheck ./... || true"'
     inputs:
