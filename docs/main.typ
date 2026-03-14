@@ -152,87 +152,131 @@
 
 == Vorstellung des Providers
 
-// TODO: Kurze Vorstellung von Infomaniak und dem Jelastic PaaS Angebot
-// - Was ist Infomaniak? (Schweizer Cloud-Provider, Hauptsitz Genf)
-// - Was bietet Jelastic PaaS? (Container-basierte PaaS-Lösung)
-// - Welche Technologien werden unterstützt? (Java, Node.js, PHP, Python, etc.)
+Infomaniak ist ein unabhängiger Schweizer Cloud- und Hosting-Provider mit Hauptsitz in Genf, gegründet 1994. Das Unternehmen betreibt eigene Rechenzentren in der Schweiz (Genf und Winterthur) und positioniert sich als datensouveräne Alternative zu den US-amerikanischen Hyperscalern. Alle Daten unterliegen ausschliesslich Schweizer Recht und sind nicht dem US CLOUD Act ausgesetzt. Infomaniak ist ISO 27001- und ISO 14001-zertifiziert und betreibt seine Infrastruktur mit 100% erneuerbarer Energie.
 
-#todo[Infomaniak und das Jelastic PaaS Angebot vorstellen. Schweizer Provider, Datacenter-Standorte, unterstützte Technologien.]
+Neben klassischen Hosting-Produkten (Webhosting, E-Mail, Domains) bietet Infomaniak mit der *Jelastic Cloud* eine PaaS-Lösung an, die auf der Virtuozzo/Jelastic-Plattform basiert. Jelastic ermöglicht das Deployment von Applikationen in einer Vielzahl von Technologien -- darunter Java, Go, Node.js, PHP, Python, Ruby und .NET -- sowie Docker-Container und Kubernetes-Cluster. Die Plattform zeichnet sich durch automatische vertikale Skalierung, ein Pay-per-Use-Abrechnungsmodell auf Stundenbasis und ein integriertes Web-Dashboard zur Verwaltung aus.
+
+#screenshot("artifakte/value_proposition_jpc.png", caption: [Willkommensseite der Infomaniak Jelastic Cloud mit Übersicht der Plattform-Features.])
 
 == Registrierung und Setup
 
-// TODO: Registrierungsprozess beschreiben
-// - Account-Erstellung bei Infomaniak
-// - Zugang zum Jelastic Dashboard
-// - Installation allfälliger CLI-Tools oder IDE-Plugins
+Der Registrierungsprozess bei Infomaniak verläuft über die Hauptwebsite und erinnert an klassische Schweizer Hosting-Provider wie Hostpoint. Die Oberfläche ist einfach gehalten und richtet sich primär an ein weniger technisches Publikum -- für erfahrene Entwickler wirkt der Prozess eher ungewohnt im Vergleich zu den Onboarding-Flows moderner Cloud-Plattformen.
 
-#todo[Registrierungsprozess und Setup-Schritte dokumentieren mit Screenshots.]
+*Verifikation:* Die Identitätsprüfung erfolgt telefonisch: Man wird an eine Nummer angerufen und muss innerhalb von zwei Minuten dreimal bestätigen. Dieser Prozess ist ungewöhnlich, aber funktional. Die erste Bestellung einer Public-Cloud-Instanz erfordert sofort eine Zahlung. Positiv hervorzuheben ist, dass neben Kreditkarte auch *Twint* als Zahlungsmittel angeboten wird -- für einen Schweizer Provider erwartbar, aber dennoch ein Pluspunkt gegenüber internationalen Anbietern.
+
+*Problem bei der Erstbestellung:* Die initiale Bestellung wurde gesperrt, da die Verifikation noch nicht abgeschlossen war. Beim Versuch, den Vorgang fortzusetzen, erschien lediglich eine generische Fehlermeldung ohne Hinweis auf das weitere Vorgehen. Da der telefonische Support für Nicht-Premium-Kunden nur Montag bis Freitag von 09:00 bis 18:00 Uhr erreichbar ist, musste am Wochenende ein Support-Ticket eröffnet werden. Der Support antwortete über den Chat und bot als alternative Identifikation an, ein Foto des Ausweises sowie ein Selfie mit dem Ausweis einzusenden. Nach Einsendung wurde die Bestellung zeitnah freigeschaltet.
+
+*MFA-Einrichtung:* Der Multi-Faktor-Authentifizierungsprozess war hingegen vorbildlich umgesetzt. Die Aufforderung zur Aktivierung war klar als «Action Required» gekennzeichnet, und der Einrichtungsprozess verlief reibungslos.
+
+*Zugang zur Jelastic Cloud:* Der Zugang zum Jelastic-Dashboard war initial schwierig zu finden. Der Name «Jelastic Cloud» ist im Kontext des ansonsten klar strukturierten Infomaniak-Portfolios ungewohnt und nicht sofort als PaaS-Lösung erkennbar. Einmal gefunden, wirkt das Dashboard jedoch aufgeräumt und weniger überladen als die Konsolen grosser Hyperscaler.
 
 == Hello-World-Tutorial
 
-// TODO: Gewähltes Tutorial beschreiben und durcharbeiten
-// - Welches Tutorial / welche Applikation wurde gewählt? (z.B. Java Spring Boot)
-// - Schritte zum Deployment
-// - Screenshots der laufenden Applikation
+Anstelle eines trivialen Beispiels wurde eine eigene Go-Applikation entwickelt: das *Swiss Transport Board*. Die Applikation zeigt Live-Abfahrtszeiten des Schweizer öffentlichen Verkehrs an, basierend auf der offenen API von transport.opendata.ch. Als Caching-Layer wird Memcached eingesetzt, um wiederholte API-Anfragen zu vermeiden.
 
-#todo[Hello-World-Tutorial durcharbeiten und dokumentieren. Kein triviales Beispiel (keine statische HTML-Seite), z.B. eine Java-Applikation.]
+*Stack:*
+- Go (net/http, kein Framework)
+- Memcached (gomemcache)
+- HTML/CSS inline (kein Frontend-Framework)
+
+=== Environment erstellen
+
+Im Jelastic Dashboard wurde über «New Environment» ein neues Environment mit folgender Topologie erstellt:
+
+- *Application Server:* Go (Golang 1.26.1)
+- *Cache:* Memcached 1.6.41
+- *Cloudlets:* 2 Reserved, bis zu 10 Dynamic (Scaling Limit)
+- *Datacenter:* Geneva DC3
+
+#screenshot("artifakte/jpc_add_enviroment.png", caption: [Topology Wizard: Erstellung des Go-Environments mit Memcached-Cache-Node im Datacenter Geneva DC3.])
+
+=== Deployment via Git-Integration
+
+Das Deployment erfolgt über die integrierte Git-Anbindung im Jelastic Dashboard. Im Deployment Manager unter dem Reiter «Git/SVN» wird eine beliebige Git-Repository-URL und der gewünschte Branch (in unserem Fall `main`) angegeben -- die Integration ist vendor-neutral und funktioniert mit GitHub, GitLab (z.B. gitlab.ost.ch), Bitbucket oder jedem anderen Git-Server gleichermassen. Jelastic klont das Repository, führt automatisch `go get` und `go build` aus und startet die Applikation. Die Option «Check and auto-deploy updates» wurde aktiviert, sodass bei Änderungen im Repository automatisch ein Redeployment ausgelöst wird.
+
+Anfänglich befand sich der Go-Code in einem Unterverzeichnis (`swiss-transport-board/`). Da die Git-Integration von Jelastic keine Monorepo-Strukturen mit Unterverzeichnissen unterstützt, musste die Projektstruktur angepasst werden: Die Go-Dateien wurden in das Repository-Root verschoben.
+
+#screenshot("artifakte/jpc_env_group.png", caption: [Laufendes Environment mit Go Application Server (Node 197699) und Memcached Cache (Node 197700), deployed via Git-Integration.])
+
+=== Laufende Applikation
+
+Nach erfolgreichem Deployment ist die Applikation unter der Jelastic-URL erreichbar. Die Abfahrtszeiten werden live von der Transport-API abgerufen und mit Linie, Ziel, Gleis und allfälliger Verspätung angezeigt.
+
+#screenshot("artifakte/swiss_transport_app.png", caption: [Swiss Transport Board: Live-Abfahrten ab Rapperswil SG mit S-Bahn-, IR- und Regionalverbindungen.])
 
 == Teamarbeit und Deployment
 
-// TODO: Teamarbeit dokumentieren
-// - Können alle Teammitglieder deployen?
-// - Benutzer- und Zugriffsrechteverwaltung
-// - GitHub/GitLab-Integration möglich?
+Die Zusammenarbeit im Team erfolgt über das gemeinsame Git-Repository. Beide Teammitglieder können Code pushen, wodurch über die aktivierte Auto-Deploy-Funktion automatisch ein Redeployment auf der Jelastic-Plattform ausgelöst wird. De facto können somit beide Teammitglieder indirekt deployen, ohne direkten Zugang zum Jelastic-Dashboard zu benötigen.
 
-#todo[Teamarbeit beim Deployment beschreiben. Zugriffsrechte, gemeinsames Deployen.]
+*Einschränkungen bei der Zugriffsverwaltung:* Die Jelastic Cloud von Infomaniak bietet kein Multi-User- oder Team-Management für ein einzelnes Environment. Es gibt lediglich die Möglichkeit, die *Ownership eines Environments zu transferieren* -- ein gleichzeitiger Zugriff mehrerer Benutzer auf dasselbe Dashboard-Konto ist nicht vorgesehen. Dies ist ein deutlicher Nachteil gegenüber Hyperscalern wie AWS (IAM) oder Azure (RBAC), die feingranulare Zugriffsrechte und Team-Kollaboration ermöglichen.
+
+*Workaround:* Durch die Git-Integration wird dieses Problem für den Deployment-Workflow weitgehend entschärft: Beide Teammitglieder arbeiten im Git-Repository, und das Deployment wird automatisch durch Pushes auf den `main`-Branch ausgelöst. Für administrative Aufgaben (Environment-Konfiguration, Logs, Monitoring) ist jedoch nur der Account-Inhaber zuständig.
 
 == Beantwortung der Fragen
 
 === Weshalb haben Sie diesen Provider für die Evaluation ausgewählt?
 
-// TODO: Begründung für die Wahl von Infomaniak
-// - Schweizer Provider, Datenschutz
-// - Jelastic PaaS als interessante Plattform
-// - Persönliche Erfahrungen / Interesse
+Infomaniak wurde aus mehreren Gründen als Evaluationsgegenstand gewählt:
 
-#todo[Begründung für die Providerwahl verfassen.]
+- *Schweizer Datensouveränität:* Als einer der wenigen Schweizer Cloud-Provider mit eigener PaaS-Lösung bietet Infomaniak eine interessante Alternative zu den US-dominierten Hyperscalern. Gerade im Kontext des Schweizer Datenschutzgesetzes (nDSG) und der zunehmenden Diskussion um den US CLOUD Act ist dies ein relevantes Differenzierungsmerkmal.
+
+- *Jelastic als unbekannte Plattform:* Im Gegensatz zu den weitverbreiteten Plattformen (AWS, Azure, GCP, Railway) war Jelastic für beide Teammitglieder Neuland. Die Evaluation bot die Gelegenheit, eine weniger bekannte PaaS-Lösung kennenzulernen und mit den etablierten Anbietern zu vergleichen.
+
+- *Lokaler Bezug:* Infomaniak ist in der Schweizer IT-Landschaft als Hosting-Provider bekannt, die Jelastic-Cloud-Lösung hingegen weniger. Es war interessant zu untersuchen, wie sich ein Schweizer Anbieter im PaaS-Segment schlägt.
+
+- *Skepsis gegenüber Hyperscalern:* Die jüngsten Preiserhöhungen bei Azure haben die kritische Haltung gegenüber der Abhängigkeit von grossen US-Cloud-Providern zusätzlich verstärkt. Dies motivierte, einen lokalen Anbieter als mögliche Alternative zu evaluieren.
 
 === Möglichkeiten zum Starten und Stoppen der Applikation
 
-// TODO: Start/Stop-Mechanismen beschreiben
-// - Dashboard-Optionen
-// - CLI-Befehle falls vorhanden
-// - API-Zugriff
+Jelastic bietet mehrere Wege, eine Applikation zu starten und zu stoppen:
 
-#todo[Start- und Stopp-Möglichkeiten dokumentieren mit Screenshots.]
+- *Dashboard:* Im Environment-Überblick stehen Buttons für «Start», «Stop» und «Restart» zur Verfügung. Das gesamte Environment oder einzelne Nodes können unabhängig gesteuert werden. Ein gestopptes Environment verbraucht keine Cloudlets und verursacht entsprechend keine Kosten (ausser für reservierten Speicherplatz und öffentliche IPs).
+
+- *REST API:* Über die Jelastic API können Environments programmatisch gestartet und gestoppt werden (`environment.control.StartEnv` / `StopEnv`). Dies ermöglicht die Integration in externe Automatisierungstools.
+
+- *CLI:* Das Jelastic CLI bietet entsprechende Kommandos für die skriptbasierte Verwaltung.
+
+- *Auto-Scaling:* Obwohl kein expliziter Start/Stop, werden Dynamic Cloudlets automatisch alloziert und freigegeben, was einem automatischen «Scale-to-near-zero» gleichkommt -- bei minimaler Last fallen nur die Reserved-Cloudlet-Kosten an.
 
 === Deployment-Automatisierung
 
-// TODO: Automatisierungsmöglichkeiten beschreiben
-// - CI/CD-Integration
-// - Git-Hooks
-// - API-basiertes Deployment
-// - Welche Schritte wären nötig?
+Für die Deployment-Automatisierung bietet Jelastic mehrere Ansätze:
 
-#todo[Möglichkeiten der Deployment-Automatisierung beschreiben (muss nicht eingerichtet werden).]
+- *Git Auto-Deploy (eingesetzt):* Die von uns genutzte Variante. Im Deployment Manager wird ein Git-Repository hinterlegt und die Option «Check and auto-deploy updates» aktiviert. Jelastic prüft periodisch (konfigurierbar) auf Änderungen im Repository und deployt automatisch. Dies ist die einfachste Automatisierungsmöglichkeit und wurde für unser Projekt eingerichtet.
+
+- *REST API + CI/CD-Pipeline:* Über die Jelastic REST API lässt sich ein Deployment aus einer CI/CD-Pipeline (z.B. GitHub Actions, GitLab CI, Jenkins) auslösen. Der typische Ablauf wäre: Code pushen, CI-Pipeline baut und testet, bei Erfolg wird via API-Call ein Redeployment auf Jelastic ausgelöst. Dieses Vorgehen ermöglicht eine engere Kontrolle (z.B. Deployment nur nach bestandenen Tests).
+
+- *Jelastic CLI in Scripts:* Das CLI kann in Shell-Scripts oder CI-Jobs eingebettet werden und bietet ähnliche Möglichkeiten wie die REST API.
+
+Für unser Projekt wurde die Git-Auto-Deploy-Variante gewählt, da sie den geringsten Aufwand erfordert und für eine Hello-World-Applikation ausreichend ist. Zusätzlich haben wir eine GitHub-Actions-Pipeline eingerichtet, die bei jedem Push Linting, Tests und Security-Checks durchführt -- das eigentliche Deployment wird jedoch von Jelastic direkt über die Git-Integration ausgelöst.
 
 === Logging und Monitoring
 
-// TODO: Log-Zugriff beschreiben
-// - Wo findet man die Logs?
-// - Sind HTTP Requests/Responses sichtbar?
-// - Monitoring-Features
+*Log-Zugriff:* Jelastic bietet Zugang zu den Applikations-Logs über das Dashboard. Über den «Log»-Button am jeweiligen Node öffnet sich ein Log-Viewer, der die verfügbaren Log-Dateien auflistet. Im Hintergrund handelt es sich um einen FTP-Wrapper, der den Zugriff auf die Log-Dateien des Containers ermöglicht. Für technisch versierte Benutzer ist dies ausreichend, für Einsteiger dürfte die Darstellung jedoch unübersichtlich sein. Alternativ kann über SSH direkt auf die Log-Dateien zugegriffen werden.
 
-#todo[Log-Zugriff und Monitoring dokumentieren. HTTP Requests/Responses?]
+HTTP Requests und Responses sind in den Go-Applikations-Logs sichtbar, sofern die Applikation diese selbst loggt (in unserem Fall via `slog`). Ein integriertes HTTP-Request-Logging auf Plattformebene (vergleichbar mit einem Access-Log eines vorgeschalteten Reverse Proxys) ist nicht standardmässig vorhanden, kann aber durch Hinzufügen eines Load-Balancer-Nodes (z.B. NGINX) erreicht werden.
+
+*Monitoring:* Jeder Node verfügt über ein Statistik-Panel, das CPU-Auslastung, RAM-Verbrauch, Disk-I/O und Netzwerk-Traffic in Echtzeit anzeigt. Historische Daten können über verschiedene Zeiträume (1 Stunde bis 1 Monat) visualisiert werden. Die Darstellung ist funktional, aber schlicht -- externe Monitoring-Tools wie Grafana oder Datadog müssten manuell integriert werden.
+
+*Fehlermeldungen:* Die Fehlermeldungen der Plattform sind verbesserungswürdig. Beispielsweise lieferte ein fehlgeschlagenes Deployment lediglich die Meldung _«The [jem vcs update] operation has failed: Project updated failed»_ ohne weitere Hinweise auf die Ursache. Die Lösung erforderte das manuelle Durchsuchen der Log-Dateien. Im Vergleich dazu bieten auch grosse Provider wie Azure keine durchwegs bessere Erfahrung beim Log-Zugriff, jedoch sind deren Fehlermeldungen in der Regel informativer.
 
 === Vor- und Nachteile gegenüber Railway
 
-// TODO: Vergleich mit Railway
-// - Vorteile von Infomaniak
-// - Nachteile von Infomaniak
-// - Unterschiede im Workflow
+Railway ist eine moderne, entwicklerzentrierte PaaS-Plattform mit Sitz in den USA, die sich durch ein besonders einfaches Developer-Experience auszeichnet. Im Folgenden wird Infomaniak Jelastic mit Railway verglichen:
 
-#todo[Vor- und Nachteile gegenüber Railway diskutieren.]
+*Vorteile von Infomaniak Jelastic gegenüber Railway:*
+- *Datensouveränität:* Daten verbleiben in der Schweiz unter Schweizer Recht -- Railway hostet auf GCP in den USA.
+- *Feingranulare Skalierung:* Das Cloudlet-Modell ermöglicht eine stufenweise vertikale Skalierung. Railway bietet zwar auch automatische Skalierung, jedoch weniger transparent.
+- *Infrastrukturkontrolle:* Jelastic erlaubt die Konfiguration der gesamten Topologie (Load Balancer, Cache-Nodes, Datenbanken) über den Topology Wizard. Railway abstrahiert die Infrastruktur stärker.
+- *SSH-Zugang:* Direkter Terminal-Zugang zu den Containern für Debugging. Railway bietet dies nur eingeschränkt.
+
+*Nachteile von Infomaniak Jelastic gegenüber Railway:*
+- *Developer Experience:* Railway bietet ein deutlich moderneres Onboarding. Ein Deployment ist innerhalb von Minuten via `railway up` oder Git-Integration möglich -- ohne manuelle Topologie-Konfiguration.
+- *UI/UX:* Das Jelastic-Dashboard wirkt im Vergleich zu Railways schlankem Interface veraltet und verschachtelt.
+- *Fehlermeldungen:* Railway liefert klare Build-Logs direkt im Dashboard; bei Jelastic sind die Fehlermeldungen oft kryptisch.
+- *Monorepo-Support:* Railway unterstützt Monorepos mit konfigurierbarem Root-Directory nativ. Jelastic erfordert, dass die Applikation im Repository-Root liegt.
+- *Team-Kollaboration:* Railway bietet native Team-Features mit rollenbasiertem Zugriff. Jelastic erlaubt nur einen einzelnen Account-Inhaber pro Environment.
+- *Gratis-Angebot:* Railway bietet ein dauerhaftes Free Tier (mit Einschränkungen), Infomaniak lediglich einen 14-tägigen Trial.
 
 
 // ========================================================================
@@ -342,34 +386,34 @@ Die geschätzten Kosten werden bereits im Topology Wizard angezeigt, bevor ein E
     // --- Registrierung und Anmeldung ---
     table.cell(colspan: 2, fill: luma(240), [*Registrierung und Anmeldung*]),
     [
-      #todo[Schritte, Commands, Screenshots für Infomaniak]
+      Registrierung über Infomaniak-Website. Telefonische Verifikation oder alternativ ID + Selfie. MFA-Aktivierung gut umgesetzt. Zugang zur Jelastic Cloud nicht sofort intuitiv auffindbar.
     ],
     [
-      #todo[Vergleich mit Railway: Unterschiede, Vor-/Nachteile]
+      Railway: Anmeldung via GitHub OAuth in Sekunden. Keine Identitätsprüfung nötig. Sofortiger Zugang zum Dashboard. Deutlich schnelleres Onboarding.
     ],
     // --- Deployment ---
     table.cell(colspan: 2, fill: luma(240), [*Deployment*]),
     [
-      #todo[Deployment-Schritte Infomaniak]
+      Environment manuell im Topology Wizard erstellen (Go + Memcached). Git-Repository im Deployment Manager hinterlegen. Auto-Deploy aktivieren. Kein Monorepo-Support -- Applikation muss im Repository-Root liegen.
     ],
     [
-      #todo[Vergleich mit Railway-Deployment]
+      Railway: `railway up` oder GitHub-Repo verknüpfen. Automatische Build-Erkennung (Dockerfile, Nixpacks). Monorepo-Support mit konfigurierbarem Root-Directory. Deutlich weniger manuelle Konfiguration.
     ],
     // --- Operations ---
     table.cell(colspan: 2, fill: luma(240), [*Operations (Start, Stop, Logs)*]),
     [
-      #todo[Operations-Schritte Infomaniak]
+      Start/Stop/Restart über Dashboard-Buttons, REST API oder CLI. Logs über Log-Viewer (FTP-basiert) oder SSH. Monitoring via integriertes Statistik-Panel (CPU, RAM, Disk, Network). Fehlermeldungen oft kryptisch.
     ],
     [
-      #todo[Vergleich mit Railway-Operations]
+      Railway: Start/Stop über Dashboard oder CLI. Logs werden in Echtzeit im Dashboard gestreamt. Build-Logs klar strukturiert. Integriertes Metrics-Dashboard. Insgesamt modernere UX.
     ],
     // --- Antworten zu den Fragen ---
-    table.cell(colspan: 2, fill: luma(240), [*Antworten zu den Fragen*]),
+    table.cell(colspan: 2, fill: luma(240), [*Antworten zu den Fragen (RAM, JVM, IP)*]),
     [
-      #todo[Antworten Infomaniak (RAM, JVM, IP)]
+      #todo[Nach Deployment der Self-Information-App ausfüllen: Verfügbarer RAM, JVM-Hersteller, Server-IP-Adresse.]
     ],
     [
-      #todo[Vergleich mit Railway]
+      #todo[Nach Deployment auf Railway ausfüllen: Vergleichswerte RAM, JVM, IP.]
     ],
   ),
   caption: [Gegenüberstellung: Infomaniak (Jelastic PaaS) vs. Railway],
@@ -554,15 +598,55 @@ Darüber hinaus definiert Infomaniak *Fehlerklassen mit maximalen Antwortzeiten:
 
 == «Questions to Ask» (Dimension Data White Paper)
 
-=== 1. What is covered by the SLA?
+Die folgenden Fragen basieren auf dem Dimension Data White Paper «Comparing Public Cloud Service Level Agreements» und den Vorlesungsunterlagen (Cloudonomics, SLA -- Week 3).#footnote[Vgl. Dimension Data, _Comparing Public Cloud Service Level Agreements_, White Paper, 2013.]
 
-Das SLA von Infomaniak deckt die *Infrastruktur-Verfügbarkeit* ab: Netzwerkkonnektivität, Server-Hardware, Stromversorgung und Kühlung in den eigenen Rechenzentren sowie die Verfügbarkeit der Cloud-Plattform. Explizit *ausgeschlossen* sind: Probleme auf Applikationsebene, Fehler durch Kundenkonfiguration oder -code, Dienste von Drittanbietern, geplante Wartungsarbeiten sowie Ereignisse höherer Gewalt. Auch die unsachgemässe Nutzung des Dienstes durch den Kunden sowie Sperrungen aufgrund von AGB-Verstössen sind von den Sanktionen ausgenommen. Das SLA ist somit primär ein *Infrastruktur-SLA*, nicht ein Applikations-SLA.
+=== 1. How are uptime and availability calculated?
 
-=== 2. What are the service levels?
+Infomaniak berechnet die Verfügbarkeit auf *Monatsbasis*: Die Verfügbarkeitsrate ergibt sich aus der Gesamtzahl der Minuten im Monat abzüglich der Nichtverfügbarkeitsminuten, geteilt durch die Gesamtzahl der Minuten. Dies entspricht der Best Practice gemäss Dimension Data, wonach SLAs typischerweise monatlich berechnet werden sollten und nur den Zeitraum berücksichtigen, in dem der Kunde tatsächlich Dienste bezieht. Im Gegensatz dazu berechnet beispielsweise AWS die Verfügbarkeit über die letzten 12 Monate seit Vertragsbeginn, wobei die ersten 12 Monate als 100% Uptime angenommen werden -- auch wenn der Kunde in dieser Zeit noch gar kein Nutzer war.
 
-Der zentrale Service Level ist die *99.99% monatliche Verfügbarkeitsgarantie*. Die Berechnung erfolgt auf Monatsbasis. Infomaniak bietet keine gestaffelten Service-Level-Tiers an (z.B. 99.9% vs. 99.99% zu verschiedenen Preispunkten), wie dies bei Hyperscalern wie AWS oder Azure üblich ist. Es gibt einen einheitlichen Standard-SLA für alle Cloud-Kunden. Geplante Wartungsarbeiten, über die der Kunde spätestens *48 Arbeitsstunden im Voraus* informiert wird, haben eine aufschiebende Wirkung auf die Sanktionen und werden nicht als Downtime gewertet.
+Infomaniak bietet keine gestaffelten Service-Level-Tiers an (z.B. 99.9% vs. 99.99% zu verschiedenen Preispunkten), wie dies bei Hyperscalern wie AWS oder Azure üblich ist. Es gibt einen einheitlichen Standard-SLA für alle Cloud-Kunden. Geplante Wartungsarbeiten, über die der Kunde spätestens *48 Arbeitsstunden im Voraus* informiert wird, haben eine aufschiebende Wirkung auf die Sanktionen und werden nicht als Downtime gewertet.
 
-=== 3. What happens when service levels are not met?
+Zur Einordnung der 99.99%-Garantie dient die folgende Tabelle erlaubter Downtimes:#footnote[Quelle: Wikipedia, _High availability_.]
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto),
+    align: (left, right, right, right),
+    stroke: 0.5pt + luma(180),
+    table.header(
+      table.cell(fill: rgb("#E8F0FE"), [*Verfügbarkeit*]),
+      table.cell(fill: rgb("#E8F0FE"), [*Downtime/Jahr*]),
+      table.cell(fill: rgb("#E8F0FE"), [*Downtime/Monat*]),
+      table.cell(fill: rgb("#E8F0FE"), [*Downtime/Woche*]),
+    ),
+    [99% («two nines»)], [3.65 Tage], [7.20 Stunden], [1.68 Stunden],
+    [99.9% («three nines»)], [8.76 Stunden], [43.8 Minuten], [10.1 Minuten],
+    [99.95%], [4.38 Stunden], [21.56 Minuten], [5.04 Minuten],
+    [*99.99% («four nines»)*], [*52.56 Minuten*], [*4.32 Minuten*], [*1.01 Minuten*],
+    [99.999% («five nines»)], [5.26 Minuten], [25.9 Sekunden], [6.05 Sekunden],
+  ),
+  caption: [Erlaubte Ausfallzeiten bei verschiedenen Verfügbarkeitsstufen],
+)
+
+=== 2. What should be in place for me to be covered?
+
+Das SLA von Infomaniak deckt die *Infrastruktur-Verfügbarkeit* ab: Netzwerkkonnektivität, Server-Hardware, Stromversorgung und Kühlung in den eigenen Rechenzentren sowie die Verfügbarkeit der Cloud-Plattform. Es handelt sich primär um ein *Infrastruktur- und Plattform-SLA* (gemäss der Dimension-Data-Klassifikation: Facilities-level und Platform-level SLA). Ein Application-level SLA wird nicht angeboten.
+
+Explizit *ausgeschlossen* sind: Probleme auf Applikationsebene, Fehler durch Kundenkonfiguration oder -code, Dienste von Drittanbietern, geplante Wartungsarbeiten sowie Ereignisse höherer Gewalt. Auch die unsachgemässe Nutzung des Dienstes durch den Kunden sowie Sperrungen aufgrund von AGB-Verstössen sind von den Sanktionen ausgenommen.
+
+Im Vergleich zu Hyperscalern wie AWS, Microsoft Azure oder HP Cloud, die teilweise verlangen, dass der Kunde in *mehreren Availability Zones* deployt, um SLA-Ansprüche geltend machen zu können, stellt Infomaniak keine solchen architektonischen Voraussetzungen. Allerdings betreibt Infomaniak Rechenzentren ausschliesslich in der Schweiz (Genf und Winterthur), sodass keine Multi-Region-Redundanz möglich ist. Der Kunde ist zudem *allein verantwortlich* für die Datensicherung -- Infomaniak erstellt keine automatischen Backups, sofern der Snapshot-Slot nicht explizit aktiviert wird (Art. 5/6 AGB).
+
+=== 3. What about performance degradation as opposed to hard downtime?
+
+Das SLA unterscheidet über die Fehlerklassen implizit zwischen vollständiger Nichtverfügbarkeit und Leistungsbeeinträchtigung:
+
+- *Fehlerklasse A* (Nichtverfügbarkeit): Totaler Ausfall des Dienstes -- max. 5 Minuten Unterbrechung.
+- *Fehlerklasse B* (Verlangsamung des Internetzugangs): Netzwerk-Performance-Degradation -- max. 60 Minuten.
+- *Fehlerklasse C--E*: Sicherheitsprobleme, Update-Probleme und Ausfälle einzelner virtueller Server -- 60 bis 120 Minuten.
+
+Dies ist positiv zu bewerten: Gemäss Dimension Data sollten Cloud-SLAs *sowohl harte Downtime als auch Performance-Degradation* abdecken. Allerdings fehlen bei Infomaniak *explizite Performance-Garantien* wie garantierte IOPS, Latenzwerte oder Netzwerk-Durchsatz. Es bleibt unklar, ab welchem Grad der Verlangsamung eine Fehlerklasse B ausgelöst wird. Das SLA fokussiert auf *Server-Verfügbarkeit*, nicht auf *Netzwerk-Performance* -- ein Aspekt, den das Dimension Data White Paper als «one of the most important components of cloud architecture» hervorhebt.
+
+=== 4. What are the penalties for SLA violations?
 
 Bei Nichteinhaltung der Service Levels kann der Kunde *Vertragsstrafen* geltend machen. Die Höhe ist gestaffelt nach Fehlerklasse und Anzahl Vorfälle pro Jahr:
 
@@ -588,15 +672,13 @@ Bei Nichteinhaltung der Service Levels kann der Kunde *Vertragsstrafen* geltend 
   caption: [Vertragsstrafen bei SLA-Verletzungen gemäss Infomaniak AGB],
 )
 
-Die Vertragsstrafe darf *maximal 50% des laufenden Vertrags* nicht überschreiten. Der Kunde muss die Nichtverfügbarkeit *innerhalb von zwei Monaten* nach Auftreten melden und dabei Datum, Uhrzeit des Beginns und Endes angeben. Infomaniak analysiert die Ursache und entscheidet, ob die Nichtverfügbarkeit von Infomaniak verschuldet wurde. Die Entschädigung erfolgt als *Gutschrift auf das Prepaid-Konto*, nicht als Barauszahlung.
+Die Vertragsstrafe darf *maximal 50% des laufenden Vertrags* nicht überschreiten. Die Entschädigung erfolgt als *Gutschrift auf das Prepaid-Konto*, nicht als Barauszahlung. Im Vergleich dazu: Terremark zahlt USD 96 pro 24-Stunden-Ausfallperiode (bis 50% der Monatsgebühren); Amazon begrenzt SLA-Credits auf 10% der monatlichen Rechnung; HP begrenzt auf 30% der betroffenen Ressourcenkosten; Rackspace erstattet bis 100%, aber nur für die tatsächlich ausgefallenen Server.#footnote[Vgl. Dimension Data, _Comparing Public Cloud Service Level Agreements_, S. 3.]
 
-=== 4. How are service levels measured?
+=== 5. What do I have to do to request a credit?
 
-Infomaniak überwacht die Verfügbarkeit seiner Dienste *kontinuierlich mittels eigener Messindikatoren* und kann so die gesamte System- und Netzinfrastruktur überwachen (Art. 7.2.4 AGB). Infomaniak ergreift proaktiv Massnahmen zur Systemverfügbarkeit und zur Erkennung potenzieller infrastrukturbedingter Störungen. Die Messmethodik (Intervalle, Messpunkte) wird jedoch *nicht detailliert offengelegt*. Im Streitfall sind Infomaniaks interne Monitoring-Daten die Referenz. Der Kunde hat begrenzte Möglichkeiten, die SLA-Einhaltung unabhängig zu verifizieren. Dies ist eine *Transparenzlücke* im Vergleich zu Hyperscalern, die oft öffentliche Status-Dashboards mit historischen Uptime-Daten bereitstellen.
+Der Kunde muss die Nichtverfügbarkeit *innerhalb von zwei Monaten* nach Auftreten über das Supportportal melden und dabei Datum, Uhrzeit des Beginns und Endes angeben. Infomaniak analysiert daraufhin die Ursache und entscheidet, ob die Nichtverfügbarkeit von Infomaniak verschuldet wurde.
 
-=== 5. What are the customer's obligations?
-
-Die Kundenpflichten sind in Artikel 5 der AGB umfassend definiert: Der Kunde ist *allein verantwortlich* für die auf dem Dienst installierten Inhalte, Daten sowie deren Entwicklung, Betrieb, Wartung und Support. Der Kunde muss seine Applikationen und deren Abhängigkeiten aktuell halten. Bei Problemen durch veraltete Software kann Infomaniak nicht haftbar gemacht werden. Zudem ist der Kunde für die *Datensicherung* verantwortlich -- Infomaniak erstellt keine automatischen Sicherungskopien, es sei denn, der Kunde aktiviert den Snapshot-Slot explizit. Der Kunde muss Störungen *unverzüglich über das Supportportal melden* und alle nötigen Informationen bereitstellen.
+Dies entspricht der Branchenpraxis: Gemäss Dimension Data verlangen die meisten Provider eine schriftliche Meldung innerhalb einer bestimmten Frist. Eine Frist von 30 Tagen gilt als Standard. Infomaniaks Frist von *zwei Monaten* ist somit grosszügiger als üblich. Allerdings warnt das White Paper: Wenn der Aufwand für den Nachweis des Ausfalls (Dokumentation, Zeitaufwand) den potenziellen Credit übersteigt, ist der *praktische Wert des SLA erheblich gemindert*. Bei Infomaniak kommt hinzu, dass die Messmethodik *nicht detailliert offengelegt* wird (Art. 7.2.4 AGB) -- Infomaniaks interne Monitoring-Daten sind im Streitfall die Referenz. Dies ist eine *Transparenzlücke* im Vergleich zu Hyperscalern, die oft öffentliche Status-Dashboards mit historischen Uptime-Daten bereitstellen.
 
 == Fehlende Evaluationskriterien
 
@@ -699,6 +781,10 @@ Sämtliche Hands-On-Aufgaben (Kapitel 1 und 3) wurden eigenständig durchgeführ
 + Infomaniak -- Datenschutz-Grundverordnung (DPA). https://www.infomaniak.com/en/legal/data-protection-act
 
 + Infomaniak -- Besondere Geschäftsbedingungen Managed und Non-managed Cloud-Server (PDF, Überprüfung vom 25.04.2023).
+
++ Dimension Data -- _Comparing Public Cloud Service Level Agreements: Questions to ask when evaluating public cloud SLAs._ White Paper, CS / DDMS-1249, Februar 2013.
+
++ Prof. Mirko Stocker -- _Cloudonomics, SLA._ Vorlesungsunterlagen Cloud Solutions (CldSol), OST, Frühlingssemester 2026, Week 3.
 
 + Jelastic / Virtuozzo -- Plattform-Dokumentation. https://docs.jelastic.com/
 
